@@ -16,6 +16,10 @@ The report is designed to be clean, executive-friendly, and interactive with sli
 
 ---
 
+## Files in this repo
+- `adventureworks_sales_dashboard.pbix` — Full interactive Power BI report (includes imported data)
+- `adventureworks_sales_dashboard.pdf` — Exported report pages (quick view)
+
 ## Report Pages
 
 ### 1) Executive Sales Overview
