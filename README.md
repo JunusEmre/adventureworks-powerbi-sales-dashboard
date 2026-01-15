@@ -1,70 +1,112 @@
 # adventureworks-powerbi-sales-dashboard
-Power BI dashboard (AdventureWorks/SQL Server): executive overview, product drivers, and customer concentration analysis.
 
-AdventureWorks Sales Dashboard (Power BI)
-Overview
+Power BI dashboard (AdventureWorks on SQL Server): executive overview, product performance, and customer revenue concentration analysis.
 
-This project is a Power BI sales analytics report built on the AdventureWorks dataset. The goal is to present an executive-level overview of sales performance, drill into product drivers, and assess customer revenue concentration (dependency risk) using clear KPIs and interactive visuals.
+---
 
-Pages & Insights
+## Overview
+This project is a Power BI sales analytics report built on the **AdventureWorks** dataset sourced from **Microsoft SQL Server**.  
+The report focuses on three things:
 
-1) Executive Sales Overview
+- **Overall performance** (sales, orders, customers, AOV)
+- **Product drivers** (top products, subcategories, revenue vs units)
+- **Customer dependency risk** (revenue concentration and customer distribution)
 
-Headline KPIs: Total Sales, Total Orders, Total Customers, Avg Order Value (AOV)
+The report is designed to be clean, executive-friendly, and interactive with slicers and cross-filtering.
 
-Monthly Sales Trend for high-level performance tracking
+---
 
-Sales breakdown by Product Category and Sales Territory
+## Report Pages
 
-2) Product Performance
+### 1) Executive Sales Overview
+Purpose: A fast, high-level view of business health.
 
-Top 10 products by sales
+Includes:
+- KPI cards: **Total Sales**, **Total Orders**, **Avg Order Value (AOV)**, **Total Customers**
+- **Monthly Sales Trend** (time series)
+- **Sales by Product Category**
+- **Sales by Territory**
+- **Date range slicer** (applies across the report)
 
-Sales by product subcategory
+📸 Screenshot:
+<img width="2474" height="1384" alt="image" src="https://github.com/user-attachments/assets/42751309-515f-4792-a57d-a7293aa564d0" />
 
-Category Sales Trend used as an interactive filter for the product-level scatter plot (Revenue vs Units Sold)
+---
 
-3) Customer Revenue Concentration
+### 2) Product Performance
+Purpose: Identify what products/categories drive revenue and how volume relates to revenue.
 
-Active Customers vs Returning Customers (≥2 orders)
+Includes:
+- **Top 10 Products by Sales**
+- **Sales by Product Subcategory**
+- **Category Sales Trend** (multi-line trend by category)
+- **Revenue vs Units Sold (Product-level scatter)**
+  - The **Category Sales Trend** is used as an interactive filter: selecting a category updates the scatter dynamically.
 
-Pareto-style “Top Customers” view to visualize concentration
+📸 Screenshot:
+<img width="2444" height="1382" alt="image" src="https://github.com/user-attachments/assets/65604764-e8bd-4f11-a1d1-9f370758f0c1" />
 
-Customer distribution by revenue bands
+---
 
-Dynamic donut chart showing revenue share of Top N customers (TopN selection via helper table)
+### 3) Customer Revenue Concentration
+Purpose: Understand concentration risk and customer value distribution.
 
-Data Source & Extraction
+Includes:
+- KPI cards: **Active Customers**, **Returning Customers (2+ Orders)**, **Revenue per Active Customer**, **Customers for 80% of Sales**
+- **Pareto-style Revenue Concentration** chart (Top customers sorted by sales + cumulative line)
+- **Customer Distribution by Revenue Band**
+- **Revenue Share — Top Customers** donut chart showing revenue share of **Top N customers** (TopN selection via dropdown)
 
-The dataset was stored in Microsoft SQL Server. Only the tables and columns needed for the analysis were loaded into Power BI to keep the model lightweight and improve refresh performance. Data was imported into Power BI and modeled using a star-like schema (fact + dimension tables).
+📸 Screenshot:
+<img width="2461" height="1385" alt="image" src="https://github.com/user-attachments/assets/320260c8-3500-4960-87d4-1331eed4a656" />
 
-Data Model
+---
 
+## Data Source & Extraction
+The source data is stored in **Microsoft SQL Server** (AdventureWorks).  
+Only the required tables/columns for analysis were loaded into Power BI to keep the model lightweight and improve refresh performance.
+
+---
+
+## Data Model
 The model follows a star-like schema:
 
-Fact tables: SalesOrderHeader, SalesOrderDetail
+- **Fact tables**
+  - `Sales SalesOrderHeader`
+  - `Sales SalesOrderDetail`
 
-Dimensions: DimDate, Customer, Product, ProductSubcategory, ProductCategory, SalesTerritory
+- **Dimension tables**
+  - `DimDate`
+  - `Sales Customer`
+  - `Production Product`
+  - `Production ProductSubcategory`
+  - `Production ProductCategory`
+  - `Sales SalesTerritory`
 
-Helper tables (disconnected): RevenueBands, TopN Customers, RankAxis
+- **Helper / disconnected tables**
+  - `RevenueBands` (customer banding)
+  - `TopN Customers` (TopN selection)
+  - `RankAxis` (ranking axis support)
 
-Screenshot: 
-<img width="1568" height="1348" alt="image" src="https://github.com/user-attachments/assets/3af944b4-e97a-4b7f-ad3d-0bad0562a0ed" />
+📸 Model screenshot:  
+<img width="1568" height="1348" alt="Data Model" src="https://github.com/user-attachments/assets/3af944b4-e97a-4b7f-ad3d-0bad0562a0ed" />
 
-Tools Used
+---
 
-SQL Server – source database for AdventureWorks tables
+## Tools Used
+- **SQL Server** – data source (AdventureWorks)
+- **Power BI Desktop** – modeling, DAX measures, visualization, report design
+- **Power Query** – selecting tables/columns and shaping during import
 
-Power BI Desktop – data modeling, DAX measures, and report design
+---
 
-Power Query – table/column selection and shaping during import
+## Key DAX Measures (examples)
 
-Key Measures (examples)
-
-Returning Customers (2+ Orders)
-Counts customers who placed at least two orders within the selected filter context (e.g., date range).
-
-Returning Customers (2+ Orders) = 
+### Returning Customers (2+ Orders)
+Counts customers who placed **at least two orders** within the current filter context (e.g., the selected date range).
+Note: This measure is used on the Customer Revenue Concentration page to quantify repeat behavior.
+```DAX
+Returning Customers (2+ Orders) =
 VAR CustOrders =
     SUMMARIZE(
         'Sales SalesOrderHeader',
@@ -75,29 +117,53 @@ RETURN
 COUNTROWS(
     FILTER(CustOrders, [OrderCount] >= 2)
 )
+```
+### Sales (Top N Customers)
 
-How to Use the Report
+Calculates revenue generated by the Top N customers based on the current selection (TopN dropdown).
+Used to power the Revenue Share — Top Customers donut chart.
+```DAX
+Sales (Top N Customers) = 
+VAR N = [Selected TopN]
+VAR CustSales =
+    SUMMARIZE(
+        ALLSELECTED('Sales Customer'[CustomerID]),
+        'Sales Customer'[CustomerID],
+        "Sales", [Total Sales]
+    )
+VAR TopCust = TOPN(N, CustSales, [Sales], DESC)
+RETURN
+SUMX(TopCust, [Sales]) 
+```
 
-Use the Date range slicer to adjust the analysis period.
+### How to Use the Report
 
-On the Product page, click a category in Category Sales Trend to filter the product-level scatter chart.
+- Use the Date range slicer to change the analysis period.
 
-On the Customer Concentration page, adjust TopN selection to see how much revenue depends on the top customers.
+- On Product Performance, click a category in Category Sales Trend to filter the Revenue vs Units Sold scatter plot.
 
-What This Report Answers
+- On Customer Revenue Concentration, adjust the TopN Customers dropdown to see how much revenue depends on the top customer group.
 
-What is the overall sales performance and how does it trend over time?
+### Business Questions Answered
 
-Which product categories/subcategories and specific products drive revenue?
+- How is overall sales performance trending over time?
 
-How concentrated is revenue across customers (dependency risk)?
+- Which categories/subcategories and specific products contribute most to revenue?
 
-What portion of revenue comes from the Top N customers?
+- How do product revenue and unit volume relate (high revenue vs high volume products)?
 
-Notes / Future Enhancements
+- How concentrated is revenue across customers (dependency risk)?
 
-Add profitability metrics (margin) if the dataset includes cost or margin fields
+- What portion of revenue comes from the Top N customers?
 
-Add customer retention/cohort analysis if repeat purchasing becomes a key business question
+### Improvements / Next Steps
 
-Add “last complete month” logic to avoid partial-month drop in trends (if needed)
+Possible enhancements if this were extended further:
+
+- Add profitability (margin / gross profit) if cost data is available.
+
+- Add time intelligence KPIs: YoY, MoM, rolling 12 months.
+
+- Improve trend accuracy by excluding partial months (“last complete month” logic).
+
+- Add drillthrough pages (customer or territory) if the dataset supports richer repeat behavior (more frequent customer histories).
